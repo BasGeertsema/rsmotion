@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Bas Geertsema <mail@basgeertsema.com>
+// Copyright (c) 2019 Bas Geertsema <mail@basgeertsema.nl>
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in
@@ -75,17 +75,150 @@ using std::fmod;
 using std::sin;
 using std::sqrt;
 
+namespace {
+    template <class T>
+    class pi
+    {
+    public:
+        static constexpr T value() { return static_cast<T>(rsmotion::math::Pi()); }
+        static constexpr T two() { return static_cast<T>(rsmotion::math::TwoPi()); }
+        static constexpr T half() { return static_cast<T>(rsmotion::math::HalfPi()); }
+    };
+}
+namespace rsmotion
+{
+
+namespace algorithm {
+inline State Timeflip(const State &s)
+{
+    return State{-s.X(), s.Y(), -s.Phi()};
+}
+
+inline State Reflect(const State &s)
+{
+    return State{s.X(), -s.Y(), -s.Phi()};
+}
+
+SegmentType Reflect(const SegmentType &d)
+{
+    switch (d)
+    {
+    case SegmentType::Straight:
+        return SegmentType::Straight;
+    case SegmentType::Left:
+        return SegmentType::Right;
+    case SegmentType::Right:
+        return SegmentType::Left;
+    default:
+        return SegmentType::None;    
+    }
+}
+
+SegmentDirection Timeflip(const SegmentDirection &d)
+{
+    return d == SegmentDirection::Fwd ? SegmentDirection::Bwd : SegmentDirection::Fwd;
+}
+
+Segment Reflect(const Segment &x)
+{
+    return {Reflect(x.Type), x.Direction, x.Constraint, x.Distance};
+}
+
+Segment Timeflip(const Segment &x)
+{
+    return {x.Type, Timeflip(x.Direction), x.Constraint, -x.Distance};
+}
+
+Path::Path(std::initializer_list<Segment> segments) noexcept
+{
+    std::copy(std::begin(segments), std::end(segments), std::back_inserter(Segments));
+}
+
+float Path::Length() const
+{
+    if (Segments.empty())
+    {
+        return std::numeric_limits<float>::max();
+    }
+
+    float l = 0.f;
+    for (auto &s : Segments)
+    {
+        if (s.Infinite())
+            return std::numeric_limits<float>::max();
+        l += s.Length();
+    }
+    return l;
+}
+
+bool Path::Valid() const
+{
+    return Length() < std::numeric_limits<float>::max();
+}
+
+float &Path::Distance(std::size_t n)
+{
+    return Segments.at(n).Distance;
+}
+
+Path::operator bool() const
+{
+    return Valid();
+}
+
+bool Path::operator<(const Path &rhs) const
+{
+    return Length() < rhs.Length();
+}
+
+
+Path Reflect(const Path &p)
+{
+    auto cpy = p;
+    for (auto &s : cpy.Segments)
+    {
+        s = Reflect(s);
+    }
+    return cpy;
+}
+
+Path Timeflip(const Path &p)
+{
+    auto cpy = p;
+    for (auto &s : cpy.Segments)
+    {
+        s = Timeflip(s);
+    }
+    return cpy;
+}
+
+
+template <class T>
+inline T EnforceSO2Bounds(T val)
+{
+    T v = fmod(val, 2 * pi<T>::value());
+    if (v <= -pi<T>::value())
+        v += 2 * pi<T>::value();
+    else if (v > pi<T>::value())
+        v -= 2 * pi<T>::value();
+    return v;
+}
+
+float EnforceSO2Boundsf(float val)
+{
+    return EnforceSO2Bounds<float>(val);
+}
+
+
+
+}
+
+}
+
 namespace
 {
 
-template <class T>
-class pi
-{
-public:
-    static constexpr T value() { return static_cast<T>(rsmotion::math::Pi()); }
-    static constexpr T two() { return static_cast<T>(rsmotion::math::TwoPi()); }
-    static constexpr T half() { return static_cast<T>(rsmotion::math::HalfPi()); }
-};
+
 
 #ifndef NDEBUG
 const auto RS_EPS = 1e-5f;
@@ -456,132 +589,13 @@ State StateAfterInterpolation(const State &s, const Segment &seg, float v)
     }
 }
 
-template <class T>
-inline T EnforceSO2Bounds(T val)
-{
-    T v = fmod(val, 2 * pi<T>::value());
-    if (v <= -pi<T>::value())
-        v += 2 * pi<T>::value();
-    else if (v > pi<T>::value())
-        v -= 2 * pi<T>::value();
-    return v;
-}
-
 } // namespace
 
 namespace rsmotion
 {
 
 namespace algorithm {
-
-inline State Timeflip(const State &s)
-{
-    return State{-s.X(), s.Y(), -s.Phi()};
-}
-
-inline State Reflect(const State &s)
-{
-    return State{s.X(), -s.Y(), -s.Phi()};
-}
-
-SegmentType Reflect(const SegmentType &d)
-{
-    switch (d)
-    {
-    case SegmentType::Straight:
-        return SegmentType::Straight;
-    case SegmentType::Left:
-        return SegmentType::Right;
-    case SegmentType::Right:
-        return SegmentType::Left;
-    default:
-        return SegmentType::None;    
-    }
-}
-
-SegmentDirection Timeflip(const SegmentDirection &d)
-{
-    return d == SegmentDirection::Fwd ? SegmentDirection::Bwd : SegmentDirection::Fwd;
-}
-
-Segment Reflect(const Segment &x)
-{
-    return {Reflect(x.Type), x.Direction, x.Constraint, x.Distance};
-}
-
-Segment Timeflip(const Segment &x)
-{
-    return {x.Type, Timeflip(x.Direction), x.Constraint, -x.Distance};
-}
-
-Path::Path(std::initializer_list<Segment> segments) noexcept
-{
-    std::copy(std::begin(segments), std::end(segments), std::back_inserter(Segments));
-}
-
-float Path::Length() const
-{
-    if (Segments.empty())
-    {
-        return std::numeric_limits<float>::max();
-    }
-
-    float l = 0.f;
-    for (auto &s : Segments)
-    {
-        if (s.Infinite())
-            return std::numeric_limits<float>::max();
-        l += s.Length();
-    }
-    return l;
-}
-
-bool Path::Valid() const
-{
-    return Length() < std::numeric_limits<float>::max();
-}
-
-float &Path::Distance(std::size_t n)
-{
-    return Segments.at(n).Distance;
-}
-
-Path::operator bool() const
-{
-    return Valid();
-}
-
-bool Path::operator<(const Path &rhs) const
-{
-    return Length() < rhs.Length();
-}
-
-
-Path Reflect(const Path &p)
-{
-    auto cpy = p;
-    for (auto &s : cpy.Segments)
-    {
-        s = Reflect(s);
-    }
-    return cpy;
-}
-
-Path Timeflip(const Path &p)
-{
-    auto cpy = p;
-    for (auto &s : cpy.Segments)
-    {
-        s = Timeflip(s);
-    }
-    return cpy;
-}
-
-float EnforceSO2Boundsf(float val)
-{
-    return EnforceSO2Bounds<float>(val);
-}
-
+    
 Path SearchShortestPath(State toState)
 {
     // the optimal path is always one of
@@ -597,7 +611,7 @@ State InterpolateDistance(const State &from, const Path &path, const float dist)
 {
     auto remaining = dist;
     State to{0, 0, from.Phi()};
-    for (auto i = 0; i < path.Segments.size() && remaining > 0; ++i)
+    for (std::size_t i = 0; i < path.Segments.size() && remaining > 0; ++i)
     {
         auto &segment = path.Segments[i];
         auto v = segment.Distance < 0 ? std::max(-remaining, segment.Distance) : std::min(remaining, segment.Distance);
@@ -620,8 +634,9 @@ State InterpolateNormalized(const State &from, const Path &path, float t)
 }
 
 }
-
 }
+
+
 
 namespace
 {

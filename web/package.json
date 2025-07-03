@@ -1,0 +1,23 @@
+{
+    "name": "rsmotion-example",
+    "version": "1.0.0",
+    "description": "RS Motion WASM and WebGL example",
+    "main": "main.js",
+    "scripts": {
+        "build": "webpack",
+        "serve": "webpack server",
+        "deploy": "webpack --mode=production -o ../docs"
+    },
+    "keywords": [],
+    "author": "Bas Geertsema <mail@basgeertsema.nl>",
+    "license": "MIT",
+    "devDependencies": {
+        "copy-webpack-plugin": "^11.0.0",
+        "html-webpack-plugin": "^5.5.3",
+        "ts-loader": "^9.5.1",
+        "typescript": "^5.3.2",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4",
+        "webpack-dev-server": "^4.15.1"
+    }
+}
