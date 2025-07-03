@@ -553,13 +553,6 @@ protected:
         std::copy(v, v + N, _elem);
     }
 
-    VectorBase(const T *v, std::size_t n)
-    {
-        assert(n >= N);
-
-        std::copy(v, v + N, _elem);
-    }
-
     VectorBase(const T *v, std::size_t n, T def)
     {
         if (n > N)
@@ -1457,29 +1450,26 @@ template <class T>
 class DQuaternion
 {
 public:
-    using Quaternion = Quaternion<T>;
-    using Vector = Vector<T, 3>;
-
     DQuaternion()
     {
     }
 
-    explicit DQuaternion(const Quaternion real, const Quaternion dual)
+    explicit DQuaternion(const Quaternion<T> real, const Quaternion<T> dual)
         : _real{real}, _dual{dual}
     {
         _real.Normalize();
     }
 
-    DQuaternion(const Vector translation)
+    DQuaternion(const Vector<T,3> translation)
         : _real{1, 0, 0, 0}, _dual{0, translation[0] * 0.5f, translation[1] * 0.5f, translation[2] * 0.5f}
     {
     }
 
-    DQuaternion(const Quaternion rotation, const Vector translation)
+    DQuaternion(const Quaternion<T> rotation, const Vector<T,3> translation)
         : _real{rotation}
     {
         _real.Normalize();
-        _dual = Quaternion{0, translation[0], translation[1], translation[2]} * _real * 0.5f;
+        _dual = Quaternion<T>{0, translation[0], translation[1], translation[2]} * _real * 0.5f;
     }
 
     explicit DQuaternion(const T ra, const T rx, const T ry, const T rz,
@@ -1488,7 +1478,7 @@ public:
     {
     }
 
-    void Rotation(Quaternion rotation)
+    void Rotation(Quaternion<T> rotation)
     {
         auto trans = Translation();
         _real = rotation;
@@ -1496,14 +1486,14 @@ public:
         Translation(trans);
     }
 
-    void Translation(const Vector translation)
+    void Translation(const Vector<T,3> translation)
     {
-        _dual = math::Conjugate(_real) * Quaternion{0, translation[0] * 0.5f, translation[1] * 0.5f, translation[2] * 0.5f};
+        _dual = math::Conjugate(_real) * Quaternion<T>{0, translation[0] * 0.5f, translation[1] * 0.5f, translation[2] * 0.5f};
     }
 
-    void TranslateLocal(const Vector translation)
+    void TranslateLocal(const Vector<T,3> translation)
     {
-        _dual = _dual + (_real * Quaternion{0, translation[0] * 0.5f, translation[1] * 0.5f, translation[2] * 0.5f});
+        _dual = _dual + (_real * Quaternion<T>{0, translation[0] * 0.5f, translation[1] * 0.5f, translation[2] * 0.5f});
     }
 
     DQuaternion operator+(const DQuaternion &rhs) const
@@ -1532,12 +1522,12 @@ public:
             -_dual.At(0), _dual.At(1), _dual.At(2), _dual.At(3)};
     }
 
-    Quaternion Rotation() const
+    Quaternion<T> Rotation() const
     {
         return _real;
     }
 
-    Vector Translation() const
+    Vector<T,3> Translation() const
     {
         auto t = _dual * math::Conjugate(_real) * 2.0f;
         return t.Imag();
@@ -1551,18 +1541,19 @@ public:
         return *this;
     }
 
-    const Quaternion &Real() const
+    const Quaternion<T> &Real() const
     {
         return _real;
     }
-    const Quaternion &Dual() const
+
+    const Quaternion<T> &Dual() const
     {
         return _dual;
     }
 
 private:
-    Quaternion _real{1, 0, 0, 0};
-    Quaternion _dual{0, 0, 0, 0};
+    Quaternion<T> _real{1, 0, 0, 0};
+    Quaternion<T> _dual{0, 0, 0, 0};
 };
 
 template <class T>

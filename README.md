@@ -1,6 +1,9 @@
 # RSMotion - C++ Library for Reeds-Shepp Cars
 
-A C++11 library for calculating optimal paths of car movements using [Reeds-Shepp Cars](https://projecteuclid.org/euclid.pjm/1102645450).
+A C++ library for calculating optimal paths of car movements using [Reeds-Shepp Cars](https://projecteuclid.org/euclid.pjm/1102645450).
+
+> [!TIP]
+> Go to the **[online demo](https://basgeertsema.github.io/rsmotion/)** to see this library in action in your browser.
 
 ## Introduction
 
@@ -30,8 +33,6 @@ The library consist of a single source file (.cpp) and a couple of headers (.h).
 ```
 
 An alternative would be to create a static library and link that into your application.
-
-RSMotion requires a C++11 compiler and has been tested with Clang 8.0 and Visual Studio 2017.
 
 ## How to use?
 
@@ -89,30 +90,29 @@ CarState movedCar = TraversePathDistance(distanceTravelled, path, carStart);
 
 The library uses 3D vectors for representing positions as this is likely to be more common in 
 applications. However, it projects onto a 2D plane before calculating the optimal path.
-The default coordinate system assumes [RIGHT, UP, FORWARD] as the axes. If you use another coordinate system, you'll have 
-to change this in [coordinatesystem.h](library/include/rsmotion/coordinatesystem.h).
+The default coordinate system assumes [RIGHT, UP, FORWARD] as the axes. If you use another coordinate system, you'll have to change this in [coordinatesystem.h](library/include/rsmotion/coordinatesystem.h).
 
 
-## Building the example
+## Building the demo
 
-An [example application](example/src/main.cpp) resides in the [example](example/) directory. Currently it only builds on Win64 out of the box, as I have only added Win64 binaries of the [bgfx](https://github.com/bkaradzic/bgfx) library (a low-level graphics API). It should work on other OS-es but you have to build and link the bgfx library (and its dependencies) yourself.
+A demo app resides in the [example](example/) and [web](web/) directory. The demo runs in the browser. All simulation is done by the C++ program that uses the RSMotion C++ library. The C++ program is compiled to WebAssembly using EMScripten and the WebAssembly module is loaded in this web page. The visualization is done with javascript and WebGL. See it live [here](https://basgeertsema.github.io/rsmotion/).
 
-The example requires [CMake](https://cmake.org/) to build.
+The demo requires, besides a C++ compiler, [CMake](https://cmake.org/) and [EMscripten](https://emscripten.org/) to build.
 
-Instructions when using VS 2017 (from the root of the project):
+To build the demo first build the C++ program and then start the web application:
 
 ```
-PS> mkdir example/build
-PS> cd example/build
-PS> cmake ../ -G "Visual Studio 15 2017 Win64"
-PS> msbuild /p:Configuration=Release .\example.sln
-PS> .\Release\example.exe
+$ mkdir build 
+$ cd build
+$ emcmake cmake ../
+$ cmake --build .
+$ cd ../web
+$ npm run serve
 ```
 
-Obviously, you can specify another generator for CMake if you have a newer version of Visual Studio or use another build system such as Ninja.
+Open a browser and navigate to http://localhost:8083.
 
-If you see a black screen: ensure that you invoke the executable from a working directory that contains the shaders (```fs_cubes.bin/vs_cubes.bin```).
-
+The demo has been tested on Linux with clang 20.1.6, node 20.19, npm 11.4.2 and emscripten 4.0.10 .
 
 ## How does it work?
 
@@ -177,12 +177,11 @@ There are some limitations to consider:
 
 You might want to add this functionality to your application if it demands it. This library will unlikely fulfill all the requirements of your application. As adaptations of the library are to be expected it is okay to take the library as good start and build upon it.
 
-
 ## License
 
 > The MIT License (MIT)
 >
-> Copyright (c) 2019 Bas Geertsema <mail@basgeertsema.com>
+> Copyright (c) 2019 Bas Geertsema <mail@basgeertsema.nl>
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy of
 > this software and associated documentation files (the "Software"), to deal in
